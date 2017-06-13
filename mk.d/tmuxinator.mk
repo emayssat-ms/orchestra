@@ -1,14 +1,17 @@
 _TMUXINATOR_MK_VERSION=0.99.0
 
-# TMX_ENVIRONMENT?=ENVAR=VALUE
+# TMUXINATOR_ENVIRONMENT?=ENVAR=VALUE
+# TMUXINATOR_OPTIONS?=--debug
 TMX_LABEL?=[tmux] #
 # TMX_PROJECT?=project
 TMX_PROJECT_DIR?=$(HOME)/.tmuxinator
+TMX_SERVER_SOCKET?=$(TMX_PROJECT)
 # TMX_SETTINGS?=
 
 TMX_PROJECT_FILE?=$(TMX_PROJECT_DIR)/$(TMX_PROJECT:=.yml)
 
-TMUXINATOR?=$(TMX_ENVIRONMENT) tmuxinator
+TMUXINATOR_BIN?=tmuxinator
+TMUXINATOR?=$(__TMUXINATOR_ENVIRONMENT) $(TMUXINATOR_ENVIRONMENT) $(TMUXINATOR_BIN) $(__TMUXINATOR_OPTIONS) $(TMUXINATOR_OPTIONS)
 
 #----------------------------------------------------------------------
 # INTERFACE
@@ -32,9 +35,10 @@ _tmx_makefile_targets:
 _view_makefile_variables :: _tmux_view_makefile_variables
 _tmux_view_makefile_variables:
 	@echo "TMuXinator ($(_TMUXINATOR_MK_VERSION)) variables:"
-	@echo "    TMX_ENVIRONMENT=$(TMX_ENVIRONMENT)"
+	@echo "    TMUXINATOR=$(TMUXINATOR)"
 	@echo "    TMX_PROJECT_FILE=$(TMX_PROJECT_FILE)"
 	@echo "    TMX_PROJECT=$(TMX_PROJECT)"
+	@echo "    TMX_SERVER_SOCKET=$(TMX_SERVER_SOCKET)"
 	@echo "    TMX_SETTINGS=$(TMX_SETTINGS)"
 	@echo
 

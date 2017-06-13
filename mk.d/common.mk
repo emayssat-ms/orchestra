@@ -1,12 +1,23 @@
 _COMMON_MK_VERSION=0.99.1
 
-YYMMDD:=$(shell date +%y%m%d)
-TMP_DIR:=/tmp/$(YYMMDD)
+CMN_ASYNC_MODE?=false
+CMN_DATE?=$(shell /bin/date)
+CMN_DATE_YYYYMMDD:=$(shell date +%Y%m%d)
+CMN_DEBUG_MODE?=false
+CMN_INTERACTIVE_MODE?=false
+CMN_LABEL?=[common] #
+CMN_TMP_DIR:=/tmp/$(CMN_DATE_YYYYMMDD)
+COMMA=,#
+LABEL?=[local] #
+# MAKE_ENVIRONMENT?=FOO=1
+# MAKE_OPTIONS?= -e -n -p --silent FOO=1
 SHELL:=/bin/sh
+SPACE=
+SPACE+=
 
-DATE=$(shell /bin/date)
-DEBUG_MODE?=false
-INTERACTIVE_MODE?=true
+INFO?= $(if $(TERM),tput setaf 2;) echo
+WARN?= $(if $(TERM),tput setaf 3;) echo -n "<!> "; echo
+WARN?= $(if $(TERM),tput setaf 1;) echo -n "[ERROR] "; echo
 
 ifneq (,$(TERM))
   # NORMAL?=tput sgr0
@@ -22,30 +33,42 @@ else
   ERROR?=echo -n "[ERROR] "; echo
 endif
 
-COMMA=,
-SPACE=
-SPACE+=
+# MAKE is normally automatically set to 'make' that called!
+MAKE=$(__MAKE_ENVIRONMENT) $(MAKE_ENVIRONMENT) make $(__MAKE_OPTIONS) $(MAKE_OPTIONS)
 
--include gmsl
+#----------------------------------------------------------------------
+# USAGE
+#
+
+_install_framework_dependencies :: _cmn_install_framework_dependencies
+_cmn_install_framework_dependencies:
+	@$(INFO) "$(CMN_LABEL)Installing framework dependencies ..."; $(NORMAL)
+	sudo apt-get install --upgrade gmsl
 
 _view_makefile_macros ::
 
 _view_makefile_targets ::
 
-_view_makefile_variables :: _common_view_makefile_variables
-_common_view_makefile_variables : _view_makefile_variables_info
-	@echo "Common ($(_COMMON_MK_VERSION)) variables:"
-	@echo "    DATE=$(DATE)"
-	@echo "    DEBUG_MODE=$(DEBUG_MODE)"
-	@echo "    INTERACTIVE_MODE=$(INTERACTIVE_MODE)"
+_view_makefile_variables :: _cmn_view_makefile_variables
+_cmn_view_makefile_variables : 
+	@echo "CoMmoN ($(_COMMON_MK_VERSION)) variables:"
+	@echo "    CMN_DATE=$(CMN_DATE)"
+	@echo "    CMN_DATE_YYYYMMDD=$(CMN_DATE_YYYYMMDD)"
+	@echo "    CMN_DEBUG_MODE=$(CMN_DEBUG_MODE)"
+	@echo "    CMN_INTERACTIVE_MODE=$(CMN_INTERACTIVE_MODE)"
+	@echo "    CMN_TMP_DIR=$(CMN_TMP_DIR)"
+	@echo "    MAKE=$(MAKE)"
+	@echo "    MK_DIR=$(MK_DIR)"
+	@echo "    SHELL=$(SHELL)"
 	@echo "    TERM=$(TERM)"
 	@echo
 
-_view_makefile_variables_info:
-	@echo "Variable flags:"
-	@echo "    - Input parameter"
-	@echo "?   - Variable is avaible only under certain conditions"
-	@echo " C  - Variable is computed based on the value of other variables"
-	@echo "  A - Variable is fetched from the network (Fetch from AWS or other)"
-	@$(WARN) "Internet access may be required for A variables"; $(NORMAL)
-	@echo
+#----------------------------------------------------------------------
+# PRIVATE TARGETS
+#
+
+-include gmsl
+
+#----------------------------------------------------------------------
+# PUBLIC TARGETS
+#

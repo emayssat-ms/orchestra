@@ -1,12 +1,10 @@
 _AWS_EC2_KEYPAIR_MK_VERSION=0.99.1
 
-#--- INPUT PARAMETERS
 EC2_KEY_NAME?=$(SSH_KEY_NAME)
 EC2_KEYPAIR_DIR?=$(SSH_KEYPAIR_DIR)
 EC2_KEYPAIR_PEM?=$(EC2_KEYPAIR_DIR)/$(EC2_KEY_NAME).pem
 EC2_KEYPAIR_PUB?=$(EC2_KEYPAIR_PEM).pub
 
-#--- MAKEFILE PARAMETERS
 __PUBLIC_KEY_MATERIAL= --public-key-material "$$(cat $(EC2_KEYPAIR_PUB))"
 __KEY_NAME= --key-name $(EC2_KEY_NAME)
 
@@ -14,8 +12,11 @@ __KEY_NAME= --key-name $(EC2_KEY_NAME)
 # USAGE
 #
 
-_ec2_usage :: _keypair_usage
-_keypair_usage ::
+_ec2_view_makefile_macros :: _ec2_keypair_view_makefile_macros
+_ec2_keypair_view_makefile_macros:
+
+_ec2_view_makefile_targets :: _ec2_keypair_view_makefile_targets
+_ec2_keypair_view_makefile_targets ::
 	@echo "AWS::EC2::Keypair ($(_AWS_EC2_KEYPAIR_MK_VERSION)) targets:"
 	@echo "    _ec2_create_keypair                     - Create a keypair on AWS"
 	@echo "    _ec2_create_local_keypair               - Create a keypair on AWS"
@@ -24,20 +25,24 @@ _keypair_usage ::
 	@echo "    _ec2_ls_key                             - List key files"
 	@echo
 
-_ec2_view_makefile_variables :: _keypair_view_makefile_variables
-_keypair_view_makefile_variables ::
+_ec2_view_makefile_variables :: _ec2_keypair_view_makefile_variables
+_ec2_keypair_view_makefile_variables ::
 	@echo "AWS::EC2::Keypair ($(_AWS_EC2_KEYPAIR_MK_VERSION)) variables:"
 	@echo "    EC2_KEY_NAME=$(EC2_KEY_NAME)"
 	@echo "    EC2_KEYPAIR_DIR=$(EC2_KEYPAIR_DIR)"
-	@echo " C  EC2_KEYPAIR_PEM=$(EC2_KEYPAIR_PEM)"
-	@echo " C  EC2_KEYPAIR_PUB=$(EC2_KEYPAIR_PUB)"
+	@echo "    EC2_KEYPAIR_PEM=$(EC2_KEYPAIR_PEM)"
+	@echo "    EC2_KEYPAIR_PUB=$(EC2_KEYPAIR_PUB)"
 	@echo
 
+
 #----------------------------------------------------------------------
-# AWS OPERATIONS
+# PRIVATE TARGETS
 #
 
-#--- KEY management
+#----------------------------------------------------------------------
+# PUBLIC TARGETS
+#
+
 _ec2_create_keypair:
 	mkdir -vp $(dir $(KEYPAIR_PEM))
 	[ -e $(EC2_KEYPAIR_PEM) ] || $(AWS) ec2 create-key-pair $(__KEY_NAME) --query 'KeyMaterial' --output text > $(EC2_KEYPAIR_PEM); cat $(EC2_KEYPAIR_PEM)

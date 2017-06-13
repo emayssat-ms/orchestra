@@ -2,7 +2,7 @@ _JENKINS_MK_VERSION=0.99.0
 
 JENKINS_API?=json
 JENKINS_BUILD_NUMBER?=lastBuild
-# wget $(JENKINS_URL)/jnlpJars/jenkins-cli.jar
+# wget $(JENKINS_SERVER_URL)/jnlpJars/jenkins-cli.jar
 # JENKINS_CLI_JAR=${HOME}/bin/jenkins-cli.jar
 # JENKINS_CLI_PRIVATE_KEY=${HOME}/.ssh/jenkins.key
 # JENKINS_CLI_PUBLIC_KEY=${HOME}/.ssh/jenkins.pem
@@ -34,13 +34,13 @@ JENKINS_SEED_JOB_CONFIG_XML?=$(JENKINS_JOB_CONFIG_XML_DIR)/$(JENKINS_SEED_JOB).x
 # JENKINS_XML_XPATH?=?xpath=concat(//crumbRequestField,":",//crumb)'
 JENKINS_WATCH_INTERVAL?=5
 
-JENKINS_CLI?=java -jar $(JENKINS_CLI_JAR) -s $(JENKINS_URL) -i $(JENKINS_CLI_PRIVATE_KEY)
+JENKINS_CLI?=java -jar $(JENKINS_CLI_JAR) -s $(JENKINS_SERVER_URL) -i $(JENKINS_CLI_PRIVATE_KEY)
 
-JENKINS_URL?=https://$(JENKINS_SERVER)
-JENKINS_COMPUTER_URL?=$(JENKINS_URL)/computer
-JENKINS_JOB_URL?=$(JENKINS_URL)/job/$(JENKINS_JOB_NAME)
+JENKINS_SERVER_URL?=https://$(JENKINS_SERVER)
+JENKINS_COMPUTER_URL?=$(JENKINS_SERVER_URL)/computer
+JENKINS_JOB_URL?=$(JENKINS_SERVER_URL)/job/$(JENKINS_JOB_NAME)
 JENKINS_BUILD_URL?=$(JENKINS_JOB_URL)/$(JENKINS_BUILD_NUMBER)
-JENKINS_SEED_JOB_URL?=$(JENKINS_URL)/job/$(JENKINS_SEED_JOB)
+JENKINS_SEED_JOB_URL?=$(JENKINS_SERVER_URL)/job/$(JENKINS_SEED_JOB)
 JENKINS_SEED_BUILD_URL?=$(JENKINS_SEED_JOB_URL)/$(JENKINS_SEED_BUILD_NUMBER)
 
 JENKINS_NEXT_BUILD_NUMBER=$(shell $(CURL) -X POST  $(__USER) "$(JENKINS_JOB_URL)/api/json" | jq -r '.nextBuildNumber' 2>/dev/null)
@@ -94,7 +94,9 @@ _jenkins_view_makefile_variables:
 	@echo "    JENKINS_JOB_CONFIG_GRV=$(JENKINS_JOB_CONFIG_GRV)"
 	@echo "    JENKINS_JOB_NAME=$(JENKINS_JOB_NAME)"
 	@echo "    JENKINS_JOB_NAMES=$(JENKINS_JOB_NAMES)"
+	@echo "    JENKINS_JOB_URL=$(JENKINS_JOB_URL)"
 	@echo "    JENKINS_LOGROTATOR=$(JENKINS_LOGROTATOR)"
+	@echo "    JENKINS_NEXT_BUILD_NUMBER=$(JENKINS_NEXT_BUILD_NUMBER)"
 	@echo "    JENKINS_NODE_CONFIG_XML=$(JENKINS_CONFIG_XML)"
 	@echo "    JENKINS_NODE_NAME=$(JENKINS_NODE_NAME)"
 	@echo "    JENKINS_PROFILE=$(JENKINS_PROFILE)"
@@ -102,13 +104,11 @@ _jenkins_view_makefile_variables:
 	@echo "    JENKINS_SEED_BUILD_PARAMETERS=$(JENKINS_SEED_BUILD_PARAMETERS)"
 	@echo "    JENKINS_SEED_JOB=$(JENKINS_SEED_JOB)"
 	@echo "    JENKINS_SEED_JOB_CONFIG_XML=$(JENKINS_SEED_JOB_CONFIG_XML)"
+	@echo "    JENKINS_SEED_JOB_URL=$(JENKINS_SEED_JOB_URL)"
+	@echo "    JENKINS_SEED_NEXT_BUILD_NUMBER=$(JENKINS_SEED_NEXT_BUILD_NUMBER)"
 	@echo "    JENKINS_SERVER=$(JENKINS_SERVER)"
+	@echo "    JENKINS_SERVER_URL=$(JENKINS_SERVER_URL)"
 	@echo "    JENKINS_USER=$(JENKINS_USER)"
-	@echo " C  JENKINS_JOB_URL=$(JENKINS_JOB_URL)"
-	@echo " C  JENKINS_NEXT_BUILD_NUMBER=$(JENKINS_NEXT_BUILD_NUMBER)"
-	@echo " C  JENKINS_SEED_JOB_URL=$(JENKINS_SEED_JOB_URL)"
-	@echo " C  JENKINS_SEED_NEXT_BUILD_NUMBER=$(JENKINS_SEED_NEXT_BUILD_NUMBER)"
-	@echo " C  JENKINS_URL=$(JENKINS_URL)"
 	@echo
 
 #----------------------------------------------------------------------
@@ -128,7 +128,7 @@ _jenkins_create_job:
 
 _jenkins_create_seed_job:
 	@$(INFO) "$(JENKINS_LABEL)Creating the seed job '$(JENKINS_SEED_JOB)' ..."; $(NORMAL)
-	$(CURL) -X POST $(__USER) -H "Content-Type:application/xml" -d @$(JENKINS_SEED_JOB_CONFIG_XML) "$(JENKINS_URL)/createItem?name=$(JENKINS_SEED_JOB)"
+	$(CURL) -X POST $(__USER) -H "Content-Type:application/xml" -d @$(JENKINS_SEED_JOB_CONFIG_XML) "$(JENKINS_SERVER_URL)/createItem?name=$(JENKINS_SEED_JOB)"
 
 _jenkins_delete_job:
 	@$(INFO) "$(JENKINS_LABEL)Deleting the job '$(JENKINS_JOB_NAME)' ..."; $(NORMAL)
@@ -167,6 +167,7 @@ _jenkins_update_node:
 
 _jenkins_start_build:
 	@$(INFO) "$(JENKINS_LABEL)Starting build for the job '$(JENKINS_JOB_NAME)' ..."; $(NORMAL)
+	@$(WARN) "Jenkins job URL: $(JENKINS_JOB_URL)"; $(NORMAL)
 	$(CURL) -X POST $(__USER) "$(JENKINS_JOB_URL)/buildWithParameters?$(subst $(SPACE),&,$(JENKINS_BUILD_PARAMETERS))"
 
 _jenkins_start_groovysh:
@@ -179,7 +180,9 @@ _jenkins_view_job_builds:
 	$(CURL) -X POST $(__USER) "$(JENKINS_JOB_URL)/api/json" | jq -r '.builds[] | "\(.number) \t \(.url)"' | head -$(word 2,$(JENKINS_LOGROTATOR))
 
 _jenkins_view_build_console:
-	@$(INFO) "$(JENKINS_LABEL)View the tailed console output of build '$(JENKINS_BUILD_NUMBER)' of job '$(JENKINS_JOB_NAME)' ...\n"; $(NORMAL)
+	@$(INFO) "$(JENKINS_LABEL)View the tailed console output of build '$(JENKINS_BUILD_NUMBER)' of job '$(JENKINS_JOB_NAME)' ..."; $(NORMAL)
+	@$(WARN) "URL is $(JENKINS_BUILD_URL)/console"; $(NORMAL)
+	@echo
 	@#$(CURL) -X POST  $(__USER) "$(JENKINS_BUILD_URL)/logText/progressiveText" | tail -$(JENKINS_CONSOLE_TAIL)
 	@$(CURL) -X POST  $(__USER) "$(JENKINS_BUILD_URL)/consoleText" | tail -$(JENKINS_CONSOLE_TAIL)
 

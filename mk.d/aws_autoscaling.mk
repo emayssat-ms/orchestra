@@ -17,7 +17,7 @@ ASG_VIEW_SCALING_DETAILS_FIELDS?= [Description,Details]
 ASG_VIEW_SCALING_GROUPS_FIELDS?= {AutoScalingGroupName:AutoScalingGroupName,Desired:join(' ', [to_string(MinSize), '<=', to_string(DesiredCapacity), '<=', to_string(MaxSize)])}
 ASG_VIEW_SCALING_POLICIES_FIELDS?= {PolicyName:PolicyName,PolicyType:PolicyType,ScalingAdjustment:join(' ', [to_string(ScalingAdjustment), AdjustmentType, 'with', to_string(Cooldown), 'Cooldown']), CloudwatchAlarms:Alarms[].AlarmName}
 
-# ASG_DESCRIBE_GROUPS_QUERY_FILTER?= ?contains(AutoScalingGroupname, 'Foo')
+# ASG_DESCRIBE_GROUPS_QUERY_FILTER?= ?contains(AutoScalingGroupName, 'Foo')
 # ASG_DESCRIBE_POLICIES_QUERY_FILTER?= ?contains(PolicyName, 'Foo')
 # ASG_DESCRIBE_POLICY_ALARMS_QUERY_FILTER?= ?contains(AlarmName, 'Foo')
 ASG_DESCRIBE_ACTIVITIES_QUERY_FILTER?= 0:20:1
@@ -44,22 +44,22 @@ get_scaling_policy_alarm_NI=$(word $(2), $(call get_scaling_policy_alarms_N,$(1)
 _aws_view_makefile_macros :: _asg_view_makefile_macros
 _asg_view_makefile_macros:
 	@echo "AWS::AutoScalinG ($(_AWS_AUTOSCALING_MK_VERSION)) macros:"
-	@echo "     get_scaling_group_name             - Returns 1st auto scaling group name"
-	@echo "     get_scaling_group_name_I           - Returns 1 auto scaling group name (Index)"
-	@echo "     get_scaling_group_name_SI          - Returns 1 auto scaling group name (SortBy, Index)"
-	@echo "     get_scaling_group_names            - Returns auto scaling group names given a query filter"
-	@echo "     get_scaling_group_names_S          - Returns auto scaling group names (SortBy)"
-	@echo "     get_scaling_policies_N             - Returns scaling policies for a auto scale group (Name)"
-	@echo "     get_scaling_policy_NI              - Returns 1 scaling policies for a scale group (Name, Index)"
-	@echo "     get_scaling_policy_alarms_N        - Returns the alarms of a scaling policy (Name)"
-	@echo "     get_scaling_policy_alarm_NI        - Returns 1 alarm of a scaling policy (Name, Index)"
+	@echo "    get_scaling_group_name             - Returns 1st auto scaling group name"
+	@echo "    get_scaling_group_name_I           - Returns 1 auto scaling group name (Index)"
+	@echo "    get_scaling_group_name_SI          - Returns 1 auto scaling group name (SortBy, Index)"
+	@echo "    get_scaling_group_names            - Returns auto scaling group names given a query filter"
+	@echo "    get_scaling_group_names_S          - Returns auto scaling group names (SortBy)"
+	@echo "    get_scaling_policies_N             - Returns scaling policies for a auto scale group (Name)"
+	@echo "    get_scaling_policy_NI              - Returns 1 scaling policies for a scale group (Name, Index)"
+	@echo "    get_scaling_policy_alarms_N        - Returns the alarms of a scaling policy (Name)"
+	@echo "    get_scaling_policy_alarm_NI        - Returns 1 alarm of a scaling policy (Name, Index)"
 	@echo
 
 _aws_view_makefile_targets :: _asg_view_makefile_targets
 _asg_view_makefile_targets:
 	@echo "AWS::AutoScalinG ($(_AWS_AUTOSCALING_MK_VERSION)) targets:"
-	@echo "     _asg_view_scaling_activities     - View auto scaling activities of a particular ASG"
-	@echo "     _asg_view_account_limits         - View account limits related to auto-scaling"
+	@echo "    _asg_view_scaling_activities     - View auto scaling activities of a particular ASG"
+	@echo "    _asg_view_account_limits         - View account limits related to auto-scaling"
 	@echo
 
 _aws_view_makefile_variables :: _asg_view_makefile_variables
