@@ -101,6 +101,7 @@ _testinfra_install_framework_dependencies:
 	# PYTEST Plugins @ http://plugincompat.herokuapp.com/
 	pip install --upgrade pytest-colordots
 	pip install --upgrade pytest-xdist
+	pip install --upgrade paramiko
 
 #----------------------------------------------------------------------
 # PUBLIC KEYS

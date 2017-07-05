@@ -43,10 +43,11 @@ _ssh_makefile_targets:
 	@echo "    _ssh_delete_keypair                  - Delete a ssh key pair"
 	@echo "    _ssh_execute                         - Execute commands on a remote host"
 	@echo "    _ssh_list_keypair                    - List a ssh key pair"
+	@echo "    _ssh_list_managed_keys               - List keys managed by ssh agent"
 	@echo "    _ssh_protect_private_key             - Enforce the access right of the private key"
 	@echo "    _ssh_remove_key_from_managed_keys    - Remove ssh key from ssh agent"
+	@echo "    _ssh_start_agent                     - Start ssh agent"
 	@echo "    _ssh_update_keypair                  - Delete and recreate keypair"
-	@echo "    _ssh_view_managed_keys               - View keys managed by ssh agent"
 	@echo
 
 _view_makefile_variables :: _ssh_view_makefile_variables
@@ -75,6 +76,7 @@ _ssh_view_makefile_variables:
 
 #--- Add SSH key in local agent
 _ssh_add_key_to_managed_keys: _ssh_protect_private_key
+	@$(INFO) "$(SSH_LABEL)Adding keypair '$(SSH_KEY_NAME)' to ssh-agent..."; $(NORMAL)
 	ssh-add $(SSH_KEYPAIR_PEM)
 	ssh-add -l
 
@@ -105,6 +107,10 @@ _ssh_list_keypair:
 	@ls -al $(SSH_KEYPAIR_PEM)
 	@ls -al $(SSH_KEYPAIR_PUB)
 
+_ssh_list_managed_keys:
+	@$(INFO) "$(SSH_LABEL)List keys managed by ssh-agent ..."; $(NORMAL)
+	-ssh-add -l
+
 _ssh_protect_private_key:
 	@$(INFO) "$(SSH_LABEL)Checking rights on '$(SSH_KEYPAIR_PEM)' ..."; $(NORMAL)
 	chmod 600 $(SSH_KEYPAIR_PEM)
@@ -114,8 +120,10 @@ _ssh_remove_key_from_managed_keys:
 	ssh-add -d $(SSH_KEYPAIR_PEM)
 	ssh-add -l
 
-_ssh_update_keypair: _ssh_delete_keypair _ssh_create_keypair
+_ssh_start_agent:
+	@$(INFO) "$(SSH_LABEL) Starting ssh-agent in the background ..."; $(NORMAL)
+	@$(WARN) "This target will not work as expected because ssh-agent sets environment variables"; $(NORMAL)
+	@$(WARN) "Run this same command at the comand line"; $(NORMAL)
+	eval "$$(ssh-agent -s)"
 
-_ssh_view_managed_keys:
-	@$(INFO) "$(SSH_LABEL)List keys managed by ssh-agent ..."; $(NORMAL)
-	ssh-add -l
+_ssh_update_keypair: _ssh_delete_keypair _ssh_create_keypair

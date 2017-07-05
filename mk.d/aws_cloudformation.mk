@@ -116,17 +116,18 @@ _cfn_view_makefile_targets:
 	@echo "    _cfn_lock_stack                   - Prevent update of the stack"
 	@echo "    _cfn_unlock_stack                 - Allow limited update of the stack"
 	@echo "    _cfn_update_stack                 - Update the existing stack"
-	@echo "    _cfn_view_templates               - See the generated cfn templates"
+	@echo "    _cfn_view_exports                 - View all exported values in the region and account"
 	@echo "    _cfn_view_resource_details        - View the detailed description of a specific resource"
 	@echo "    _cfn_view_stack_events            - View a snapshot of stack events"
-	@echo "    _cfn_view_stack_reasons           - View failures and other reason for events"
 	@echo "    _cfn_view_stack_list              - View a list of all clouformation stacks"
 	@echo "    _cfn_view_stack_outputs           - View the stack's outputs"
-	@echo "    _cfn_view_stack_policy            - View the policy attached to the stack"
-	@echo "    _cfn_view_stack_status            - View the status of the current stack"
 	@echo "    _cfn_view_stack_parameters        - View the stack's parameters"
-	@echo "    _cfn_view_stack_resources         - View resources deployed in the stack"
+	@echo "    _cfn_view_stack_policy            - View the policy attached to the stack"
+	@echo "    _cfn_view_stack_reasons           - View failures and other reason for events"
+	@echo "    _cfn_view_stack_resources         - View resources deployed by a stack"
+	@echo "    _cfn_view_stack_status            - View the status of the current stack"
 	@echo "    _cfn_view_stack_summary           - View the stack summary"
+	@echo "    _cfn_view_templates               - See the generated cfn templates"
 	@echo "    _cfn_watch_stack_events           - View stack events as they come"
 	@echo 
 
@@ -175,6 +176,9 @@ __cfn_view_stack_outputs:
 #----------------------------------------------------------------------
 # PUBLIC TARGETS
 #
+
+_cfn_cancel_stack_update:
+	-$(AWS) cloudformation cancel-update-stack $(__STACK_NAME)
 
 _cfn_create_change_set:
 	$(AWS) cloudformation create-change-set $(__STACK_NAME) $(__X_TEMPLATE_BODY) $(TEMPLATE_URL) $(__USE_PREVIOUS_TEMPLATE) $(__PARAMETERS) $(__CAPABILITIES) $(__RESOURCE_TYPES) $(__ROLE_ARN) $(__NOTIFICATION_ARNS) $(__TAGS) $(__CHANGE_SET_NAME) $(__X_CLIENT_TOKEN) $(__X_DESCRIPTION) $(__CHANGE_SET_TYPE)
@@ -231,6 +235,46 @@ _cfn_sync_stack_directory: _cfn_s3_sync_stack_directory
 
 _cfn_sync_templates: _cfn_s3_sync_templates
 
+_cfn_view_exports:
+	@$(INFO) "$(AWS_LABEL)List regional and account-specific exports ..."; $(NORMAL)
+	$(AWS) cloudformation list-exports
+
+_cfn_view_resource_details:
+	@# Great to see metadata attached to a resource!
+	$(AWS) cloudformation describe-stack-resource --stack-name $(CFN_LOGICAL_RESOURCE_ID_STACK) --logical-resource-id $(CFN_LOGICAL_RESOURCE_ID)
+
+_cfn_view_stack_events:
+	$(foreach S, $(CFN_STACK_NAMES), \
+		echo -n "| "; $(INFO) "$S"; $(NORMAL); \
+		$(AWS) cloudformation describe-stack-events --stack-name $(S) --query 'StackEvents[$(CFN_EVENT_SLICE)]$(CFN_VIEW_STACK_EVENTS_FIELDS)' --output table | tail -n+4; \
+	)
+
+_cfn_view_stack_outputs:
+	@$(foreach N, $(CFN_STACK_NAMES), \
+		make -s CFN_STACK_NAME=$(N) __cfn_view_stack_outputs; \
+	)
+
+_cfn_view_stack_parameters:
+	@$(foreach S, $(CFN_STACK_NAMES), \
+		echo -n "| ";$(INFO) "Stack: $(S)"; $(NORMAL); \
+		$(AWS) cloudformation describe-stacks --query 'sort_by(Stacks[?StackName==`$(S)`].Parameters[],&ParameterKey)$(CFN_VIEW_STACK_PARAMETERS_FIELDS)' | tail -n+4; \
+	)
+
+_cfn_view_stack_policy:
+	-$(AWS) cloudformation get-stack-policy $(__STACK_NAME) 
+
+_cfn_view_stack_reasons:
+	@$(foreach S, $(CFN_STACK_NAMES), \
+		echo -n "|  "; $(INFO) "Stack: $S"; $(NORMAL); \
+		$(AWS) cloudformation describe-stack-events --stack-name $(S) --query 'StackEvents[?ResourceStatusReason!=None]$(CFN_VIEW_STACK_REASONS_FIELDS) | [$(CFN_REASON_SLICE)]' --output table | tail -n+4; \
+	)
+
+_cfn_view_stack_resources:
+	@$(foreach S, $(CFN_STACK_NAMES), \
+		echo -n "| ";$(INFO) "Stack: $(S)"; $(NORMAL); \
+		$(AWS) cloudformation list-stack-resources --stack-name $(S) --query 'StackResourceSummaries[*]$(CFN_VIEW_STACK_RESOURCES_FIELDS)' --output table | tail -n+4;\
+	)
+
 # All stacks but those which were correctly deleted!
 CFN_STACK_STATUS_FILTERS=  CREATE_IN_PROGRESS CREATE_FAILED CREATE_COMPLETE
 CFN_STACK_STATUS_FILTERS+= ROLLBACK_IN_PROGRESS ROLLBACK_FAILED ROLLBACK_COMPLETE
@@ -244,11 +288,9 @@ _cfn_view_stack_status:
 	@$(INFO) "$(AWS_LABEL)Summaries for master stack '$(CFN_STACK_NAME)'"; $(NORMAL)
 	$(AWS) cloudformation list-stacks $(__STACK_STATUS_FILTER) --query "StackSummaries[$(CFN_LIST_STACKS_QUERY_FILTER)]$(CFN_VIEW_STACK_STATUS_FIELDS)"
 
-_cfn_view_stack_events:
-	$(foreach S, $(CFN_STACK_NAMES), \
-		echo -n "| "; $(INFO) "$S"; $(NORMAL); \
-		$(AWS) cloudformation describe-stack-events --stack-name $(S) --query 'StackEvents[$(CFN_EVENT_SLICE)]$(CFN_VIEW_STACK_EVENTS_FIELDS)' --output table | tail -n+4; \
-	)
+_cfn_view_stack_summary:
+	# Metadata too long!
+	$(AWS) cloudformation get-template-summary $(__STACK_NAME) #  --output json | jq '.'
 
 ifeq ($(CMN_INTERACTIVE_MODE), true)
 
@@ -267,43 +309,6 @@ _cfn_watch_stack_events:
 	done; $(INFO) "\n$(AWS_LABEL)The stack operation on $(CFN_STACK_NAME) completed with status : $${_STACK_STATUS}"; $(NORMAL)
 
 endif
-
-_cfn_view_stack_reasons:
-	@$(foreach S, $(CFN_STACK_NAMES), \
-		echo -n "|  "; $(INFO) "Stack: $S"; $(NORMAL); \
-		$(AWS) cloudformation describe-stack-events --stack-name $(S) --query 'StackEvents[?ResourceStatusReason!=None]$(CFN_VIEW_STACK_REASONS_FIELDS) | [$(CFN_REASON_SLICE)]' --output table | tail -n+4; \
-	)
-
-_cfn_view_stack_policy:
-	-$(AWS) cloudformation get-stack-policy $(__STACK_NAME) 
-
-_cfn_cancel_stack_update:
-	-$(AWS) cloudformation cancel-update-stack $(__STACK_NAME)
-
-_cfn_view_resource_details:
-	@# Great to see metadata attached to a resource!
-	$(AWS) cloudformation describe-stack-resource --stack-name $(CFN_LOGICAL_RESOURCE_ID_STACK) --logical-resource-id $(CFN_LOGICAL_RESOURCE_ID)
-
-_cfn_view_stack_outputs:
-	@$(foreach N, $(CFN_STACK_NAMES), \
-		make -s CFN_STACK_NAME=$(N) __cfn_view_stack_outputs; \
-	)
-
-_cfn_view_stack_summary:
-	# Metadata too long!
-	$(AWS) cloudformation get-template-summary $(__STACK_NAME) #  --output json | jq '.'
-
-_cfn_view_stack_parameters:
-	@$(foreach S, $(CFN_STACK_NAMES), \
-		echo -n "| ";$(INFO) "Stack: $(S)"; $(NORMAL); \
-		$(AWS) cloudformation describe-stacks --query 'sort_by(Stacks[?StackName==`$(S)`].Parameters[],&ParameterKey)$(CFN_VIEW_STACK_PARAMETERS_FIELDS)' | tail -n+4; \
-	)
-
-_cfn_view_stack_resources:
-	@$(foreach S, $(CFN_STACK_NAMES), \
-		echo -n "| ";$(INFO) "Stack: $(S)"; $(NORMAL); \
-		$(AWS) cloudformation list-stack-resources --stack-name $(S) --query 'StackResourceSummaries[*]$(CFN_VIEW_STACK_RESOURCES_FIELDS)' --output table | tail -n+4;\
-	)
 
 #----------------------------------------------------------------------
 # SINGLE REGION AWS OPERATIONS (SHORT TEMPLATES)
